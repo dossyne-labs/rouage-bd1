@@ -209,7 +209,7 @@
   var items = [];
   var el = document.getElementById.bind(document);
   var myName = localStorage.getItem("rouage_bd_name") || "";
-  var WORKER_URL = "https://fancy-dew-949b.nicolas-imbert-provence.workers.dev/";
+  var WORKER_URL = "https://rouage-proxy-bd1.nicolas-imbert-provence.workers.dev/";
   var pollTimer = null;
 
   function esc(s){ return (s==null?"":String(s)).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
@@ -364,7 +364,7 @@
   }
   function loadComments(number){
     commentsCache[number] = "loading";
-    fetch(WORKER_URL + "?type=comments&repo=" + REPONAME + "&number=" + number + "&_=" + Date.now(), { cache: "no-store" })
+    fetch(WORKER_URL + "?type=comments&number=" + number + "&_=" + Date.now(), { cache: "no-store" })
       .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
       .then(function(data){
         commentsCache[number] = data;
@@ -435,7 +435,7 @@
     fetch(WORKER_URL, {
       method: "POST",
       headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ action: "note", repo: REPONAME, issue_number: it.number, name: myName, note: text })
+      body: JSON.stringify({ action: "note", issue_number: it.number, name: myName, note: text })
     }).then(function(r){
       if(!r.ok) return r.json().then(function(j){ throw new Error(j.error || ("HTTP "+r.status)); });
       toast("Note enregistrée");
@@ -465,7 +465,7 @@
     fetch(WORKER_URL, {
       method: "POST",
       headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ action: "status", repo: REPONAME, issue_number: it.number, status: newStatus, name: myName, keep_labels: keepLabels })
+      body: JSON.stringify({ action: "status", issue_number: it.number, status: newStatus, name: myName, keep_labels: keepLabels })
     }).then(function(r){
       if(!r.ok) return r.json().then(function(j){ throw new Error(j.error || ("HTTP "+r.status)); });
       toast("Statut enregistré — " + STATUS_LABEL[newStatus]);
@@ -486,7 +486,7 @@
       el("cardList").className = "loading";
       el("cardList").innerHTML = "Chargement…";
     }
-    fetch(WORKER_URL + "?type=issues&repo=" + REPONAME + "&_=" + Date.now(), { cache: "no-store" })
+    fetch(WORKER_URL + "?type=issues&_=" + Date.now(), { cache: "no-store" })
       .then(function(r){
         if(!r.ok) return r.json().then(function(j){ throw new Error(j.message || ("HTTP "+r.status)); });
         return r.json();
