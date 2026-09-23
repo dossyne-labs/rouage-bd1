@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Suivi d'appels Rouage — BD1</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Public+Sans:wght@400;500;600;700;800&display=swap">
+<style>
+  :root{
+    --bg:#FBF8F2; --surface:#FFFFFF; --surface-tan:#F4EFE5;
+    --border:#E4DCC9; --border-strong:#D8CDB6;
+    --ink:#201D18; --ink-muted:#6B6259; --ink-faint:#9A9082;
+    --accent:#B8642B; --accent-ink:#FFFFFF; --accent-soft:#F3E1CE; --accent-soft-ink:#8A4A1C;
+    --st-todo-bg:#EDE7DA; --st-todo-fg:#6B6259;
+    --st-tente-bg:#FBEBC7; --st-tente-fg:#8A6A16;
+    --st-barrage-bg:#EFE1F0; --st-barrage-fg:#7A4A82;
+    --st-messagerie-bg:#DDEDEA; --st-messagerie-fg:#2F6F66;
+    --st-injoignable-bg:#ECE9E3; --st-injoignable-fg:#7A736A;
+    --st-decideur-bg:#DCE7F2; --st-decideur-fg:#2E5C86;
+    --st-refus-bg:#F5DEDE; --st-refus-fg:#A23B3B;
+    --st-rdv-bg:#DCEEDD; --st-rdv-fg:#2A7A40;
+    --st-sans-bg:#EAE6DE; --st-sans-fg:#8A8072;
+    --pr-a-bg:#B8642B; --pr-a-fg:#FFFFFF;
+    --pr-b-bg:#E9CCAB; --pr-b-fg:#6B3E12;
+    --pr-c-bg:#E6E1D3; --pr-c-fg:#7A736A;
+    --shadow: 0 1px 2px rgba(32,29,24,.06), 0 4px 14px rgba(32,29,24,.05);
+    --radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Public Sans', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-inline:16px;
+  }
+  .wrap{max-width:760px; margin:0 auto;}
+  h1,h2,h3{font-family:'Source Serif 4', Georgia, serif; font-weight:700; margin:0;}
+  a{color:inherit;}
+  header.top{
+    position:sticky; top:0; z-index:20; background:var(--bg);
+    padding-top:16px; padding-bottom:10px; border-bottom:1px solid var(--border);
+  }
+  .brandrow{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px;}
+  .brand{display:flex; align-items:center; gap:9px; min-width:0;}
+  .brand .name{font-family:'Source Serif 4',serif; font-weight:700; font-size:17px;}
+  .brand .sub{font-size:11px; color:var(--ink-faint); letter-spacing:.04em; text-transform:uppercase;}
+  .toprow-actions{display:flex; gap:8px; align-items:center;}
+  .btn-ghost{
+    border:1px solid var(--border-strong); background:var(--surface); color:var(--ink-muted);
+    border-radius:9px; padding:7px 12px; font-size:12.5px; font-weight:600; cursor:pointer; text-decoration:none;
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .btn-ghost:hover{background:var(--surface-tan);}
+  .whoami{
+    display:flex; align-items:center; gap:6px; background:var(--surface-tan); border:1px solid var(--border);
+    border-radius:999px; padding:6px 12px 6px 8px; font-size:12.5px; font-weight:600; cursor:pointer;
+  }
+  .whoami .dot{width:8px; height:8px; border-radius:50%; background:var(--accent);}
+  .whoami .dot.off{background:var(--ink-faint);}
+  .searchrow{display:flex; gap:8px; margin:14px 0 10px;}
+  .searchrow input[type="search"]{
+    flex:1; border:1px solid var(--border-strong); background:var(--surface); color:var(--ink);
+    border-radius:11px; padding:10px 12px; font-size:14px; min-width:0;
+  }
+  .chiprow{display:flex; gap:7px; overflow-x:auto; padding-bottom:4px; margin-bottom:12px;}
+  .chip{
+    flex:none; border:1px solid var(--border-strong); background:var(--surface); color:var(--ink-muted);
+    border-radius:999px; padding:7px 13px; font-size:12.5px; font-weight:600; cursor:pointer; white-space:nowrap;
+    display:flex; align-items:center; gap:6px;
+  }
+  .chip .n{font-size:11px; background:var(--surface-tan); padding:1px 6px; border-radius:999px;}
+  .chip.active{background:var(--ink); color:var(--bg); border-color:var(--ink);}
+  .chip.active .n{background:rgba(255,255,255,.18); color:inherit;}
+  main{padding-bottom:64px;}
+  .empty, .loading{text-align:center; color:var(--ink-faint); padding:40px 16px; font-size:14px;}
+  .card{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:13px 14px; margin-bottom:9px; cursor:pointer; box-shadow:var(--shadow);
+    display:flex; flex-direction:column; gap:7px;
+  }
+  .card:active{transform:scale(.995);}
+  .card-top{display:flex; align-items:flex-start; justify-content:space-between; gap:10px;}
+  .card-titles .co{font-family:'Source Serif 4',serif; font-weight:700; font-size:16.5px; line-height:1.25;}
+  .badges{display:flex; gap:6px; flex:none; align-items:center;}
+  .badge{font-size:11px; font-weight:700; border-radius:7px; padding:3px 7px;}
+  .badge.pr-A{background:var(--pr-a-bg); color:var(--pr-a-fg);}
+  .badge.pr-B{background:var(--pr-b-bg); color:var(--pr-b-fg);}
+  .badge.pr-C{background:var(--pr-c-bg); color:var(--pr-c-fg);}
+  .card-bottom{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+  .pill{font-size:11.5px; font-weight:700; border-radius:999px; padding:3px 10px; white-space:nowrap;}
+  .pill.st-a-appeler{background:var(--st-todo-bg); color:var(--st-todo-fg);}
+  .pill.st-tente{background:var(--st-tente-bg); color:var(--st-tente-fg);}
+  .pill.st-barrage{background:var(--st-barrage-bg); color:var(--st-barrage-fg);}
+  .pill.st-messagerie{background:var(--st-messagerie-bg); color:var(--st-messagerie-fg);}
+  .pill.st-injoignable{background:var(--st-injoignable-bg); color:var(--st-injoignable-fg);}
+  .pill.st-decideur-joint{background:var(--st-decideur-bg); color:var(--st-decideur-fg);}
+  .pill.st-refus{background:var(--st-refus-bg); color:var(--st-refus-fg);}
+  .pill.st-rdv-obtenu{background:var(--st-rdv-bg); color:var(--st-rdv-fg);}
+  .pill.st-sans-suite{background:var(--st-sans-bg); color:var(--st-sans-fg);}
+  .flagrow{display:flex; gap:6px; flex-wrap:wrap;}
+  .flag{font-size:11px; font-weight:700; border-radius:999px; padding:3px 9px;}
+  .flag.warn{background:#F5DEDE; color:#A23B3B;}
+  .flag.nonum{background:#ECE9E3; color:#7A736A;}
+  .meta{font-size:12.5px; color:var(--ink-muted);}
+  /* modal */
+  .overlay{position:fixed; inset:0; background:rgba(20,17,12,.5); z-index:40; display:flex; align-items:flex-end; justify-content:center;}
+  @media (min-width:640px){.overlay{align-items:center;}}
+  .sheet{
+    background:var(--bg); width:100%; max-width:640px; max-height:92vh; overflow-y:auto;
+    border-radius:20px 20px 0 0; padding:18px 18px 24px;
+  }
+  @media (min-width:640px){.sheet{border-radius:20px; max-height:88vh;}}
+  .sheet-head{display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:10px;}
+  .sheet-head h2{font-size:22px; line-height:1.2;}
+  .sheet-head .close{
+    flex:none; width:32px; height:32px; border-radius:50%; border:1px solid var(--border-strong);
+    background:var(--surface); color:var(--ink-muted); font-size:16px; cursor:pointer;
+  }
+  .sheet-body{font-size:14px; line-height:1.6;}
+  .sheet-body h3{font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); margin:16px 0 6px;}
+  .sheet-body h3:first-child{margin-top:0;}
+  .sheet-body blockquote{
+    border-left:3px solid var(--accent); background:var(--surface-tan); border-radius:0 10px 10px 0;
+    padding:11px 14px; margin:0 0 10px; font-weight:600;
+  }
+  .sheet-body p{margin:0 0 8px;}
+  .sheet-body ul{margin:0 0 8px; padding-left:20px;}
+  .sheet-body strong{font-weight:700;}
+  .gh-cta{
+    display:flex; align-items:center; justify-content:center; gap:8px; background:transparent; color:var(--ink-muted);
+    border:1px solid var(--border-strong); border-radius:11px; padding:10px 14px; font-weight:600; font-size:13px;
+    text-decoration:none; margin-top:14px;
+  }
+  .statusgrid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:6px; }
+  .statusbtn{
+    border:1.5px solid var(--border-strong); background:var(--surface); color:var(--ink);
+    border-radius:11px; padding:10px 8px; font-size:12.5px; font-weight:700; cursor:pointer; text-align:center;
+  }
+  .statusbtn.current{ border-color:var(--accent); background:var(--accent-soft); color:var(--accent-soft-ink); }
+  .statusbtn:disabled{ opacity:.5; cursor:not-allowed; }
+  .toast{
+    position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
+    background:var(--ink); color:var(--bg); padding:10px 18px; border-radius:999px; font-size:13px; font-weight:600;
+    z-index:60; box-shadow:0 6px 20px rgba(0,0,0,.25); max-width:88vw; text-align:center;
+  }
+  .rate-note{font-size:11.5px; color:var(--ink-faint); text-align:center; padding:10px 0 0;}
+  .id-field{ margin-bottom:12px; }
+  .id-field label{ display:block; font-size:12px; font-weight:700; color:var(--ink-muted); margin-bottom:4px; }
+  .id-field input, .id-field textarea{
+    width:100%; border:1px solid var(--border-strong); background:var(--surface); color:var(--ink);
+    border-radius:10px; padding:9px 11px; font-size:14px; font-family:inherit;
+  }
+  .id-help{ font-size:12px; color:var(--ink-muted); line-height:1.5; background:var(--surface-tan); border-radius:10px; padding:10px 12px; margin-bottom:12px; }
+  .id-help a{ text-decoration:underline; }
+  .btn{ border:none; border-radius:10px; padding:10px 14px; font-size:13.5px; font-weight:700; cursor:pointer; width:100%; }
+  .btn.primary{ background:var(--accent); color:var(--accent-ink); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brandrow">
+      <div class="brand">
+        <div>
+          <div class="name">Suivi d'appels</div>
+          <div class="sub">Rouage Solutions · BD1 · via GitHub</div>
+        </div>
+      </div>
+      <div class="toprow-actions">
+        <div class="whoami" id="whoamiBtn"><span class="dot off" id="whoamiDot"></span><span id="whoamiName">Configurer</span></div>
+      </div>
+    </div>
+    <div class="searchrow"><input type="search" id="searchInput" placeholder="Rechercher une entreprise, un nom…"></div>
+    <div class="chiprow" id="chipRow"></div>
+  </header>
+  <main>
+    <div id="cardList" class="loading">Chargement…</div>
+    <div class="rate-note">Actualisation automatique toutes les 30 secondes.</div>
+  </main>
+</div>
+<div id="modalRoot"></div>
+<div id="toastRoot"></div>
+
+<script>
+(function(){
+  "use strict";
+  var OWNER = "dossyne-labs", REPONAME = "rouage-bd1";
+  var REPO = OWNER + "/" + REPONAME;
+  var API = "https://api.github.com/repos/" + REPO;
+  var STATUS_ORDER = ["a-appeler","tente","barrage","messagerie","injoignable","decideur-joint","refus","rdv-obtenu","sans-suite"];
+  var STATUS_LABEL = {
+    "a-appeler":"À appeler", "tente":"Sans réponse", "barrage":"Barrage", "messagerie":"Messagerie",
+    "injoignable":"Injoignable", "decideur-joint":"Décideur joint", "refus":"Refus",
+    "rdv-obtenu":"RDV obtenu", "sans-suite":"Sans suite"
+  };
+  var PRIO_ORDER = {"A":0, "B":1, "C":2};
+  var FILTERS = [
+    {key:"actifs", label:"À traiter"},
+    {key:"prioritaires", label:"Prioritaires"},
+    {key:"rdv", label:"RDV obtenus"},
+    {key:"requalifier", label:"À requalifier"},
+    {key:"enrichir", label:"Sans numéro"},
+    {key:"toutes", label:"Toutes"}
+  ];
+  var currentFilter = "actifs";
+  var searchQuery = "";
+  var items = [];
+  var el = document.getElementById.bind(document);
+  var myName = localStorage.getItem("rouage_bd_name") || "";
+  var WORKER_URL = "https://fancy-dew-949b.nicolas-imbert-provence.workers.dev/";
+  var pollTimer = null;
+
+  function esc(s){ return (s==null?"":String(s)).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+
+  function toast(msg){
+    var t = document.createElement("div");
+    t.className = "toast"; t.textContent = msg;
+    el("toastRoot").appendChild(t);
+    setTimeout(function(){ t.remove(); }, 3200);
+  }
+
+  function ghHeaders(){
+    return {"Accept":"application/vnd.github+json"};
+  }
+
+  function labelNames(issue){ return (issue.labels||[]).map(function(l){ return typeof l === "string" ? l : l.name; }); }
+  function getStatus(issue){
+    var names = labelNames(issue);
+    for(var i=0;i<names.length;i++){
+      var m = /^statut:\s*(.+)$/.exec(names[i]);
+      if(m) return m[1].trim();
+    }
+    return "a-appeler";
+  }
+  function getPrio(issue){
+    var names = labelNames(issue);
+    for(var i=0;i<names.length;i++){
+      var m = /^priorite:\s*(.+)$/.exec(names[i]);
+      if(m) return m[1].trim();
+    }
+    return "C";
+  }
+  function hasLabel(issue, name){ return labelNames(issue).indexOf(name) !== -1; }
+
+  function renderBody(md){
+    var lines = (md||"").split("\n");
+    var html = [];
+    var inList = false;
+    function closeList(){ if(inList){ html.push("</ul>"); inList=false; } }
+    lines.forEach(function(line){
+      var l = line.trim();
+      if(l.startsWith("### ")){ closeList(); html.push("<h3>"+inline(l.slice(4))+"</h3>"); return; }
+      if(l.startsWith("> ")){ closeList(); html.push("<blockquote>"+inline(l.slice(2))+"</blockquote>"); return; }
+      if(l.startsWith("- ")){ if(!inList){ html.push("<ul>"); inList=true; } html.push("<li>"+inline(l.slice(2))+"</li>"); return; }
+      if(l === "---"){ closeList(); html.push("<hr style='border:none;border-top:1px solid var(--border);margin:14px 0;'>"); return; }
+      closeList();
+      if(l) html.push("<p>"+inline(l)+"</p>");
+    });
+    closeList();
+    return html.join("");
+  }
+  function inline(s){
+    s = esc(s);
+    s = s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+    s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" style="text-decoration:underline;">$1</a>');
+    return s;
+  }
+
+  // ---------------- identity / token setup ----------------
+  function renderWhoami(){
+    el("whoamiName").textContent = myName ? myName : "Qui es-tu ?";
+    el("whoamiDot").className = "dot" + (myName ? "" : " off");
+  }
+  function openIdentityModal(){
+    el("modalRoot").innerHTML =
+      '<div class="overlay" id="idOvl"><div class="sheet">' +
+        '<div class="sheet-head"><h2>Qui es-tu&nbsp;?</h2><button class="close" id="idClose">✕</button></div>' +
+        '<div class="id-help">Ton prénom sert juste à savoir qui a mis à jour quoi dans l’historique.</div>' +
+        '<div class="id-field"><label>Ton prénom</label><input type="text" id="idName" value="'+esc(myName)+'" placeholder="Ex. Mehdi"></div>' +
+        '<button class="btn primary" id="idSave">Continuer</button>' +
+      '</div></div>';
+    el("idClose").onclick = function(){ if(myName) el("modalRoot").innerHTML=""; };
+    el("idSave").onclick = function(){
+      myName = el("idName").value.trim();
+      localStorage.setItem("rouage_bd_name", myName);
+      renderWhoami();
+      el("modalRoot").innerHTML = "";
+      if(myName) toast("Bonjour " + myName);
+    };
+    el("idName").onkeydown = function(e){ if(e.key==="Enter"){ el("idSave").click(); } };
+  }
+  el("whoamiBtn").onclick = openIdentityModal;
+
+  // ---------------- list rendering ----------------
+  function renderChips(){
+    var counts = {};
+    FILTERS.forEach(function(f){ counts[f.key] = itemsForFilter(f.key).length; });
+    el("chipRow").innerHTML = FILTERS.map(function(f){
+      return '<button class="chip'+(currentFilter===f.key?' active':'')+'" data-filter="'+f.key+'">'+f.label+'<span class="n">'+counts[f.key]+'</span></button>';
+    }).join("");
+    Array.prototype.forEach.call(document.querySelectorAll(".chip"), function(c){
+      c.onclick = function(){ currentFilter = c.getAttribute("data-filter"); renderChips(); renderList(); };
+    });
+  }
+
+  function itemsForFilter(key){
+    return items.filter(function(it){
+      var st = getStatus(it);
+      if(key==="toutes") return true;
+      if(key==="actifs") return ["a-appeler","tente","barrage","messagerie"].indexOf(st) !== -1;
+      if(key==="prioritaires") return (getPrio(it)==="A" || getPrio(it)==="B") && ["a-appeler","tente","barrage","messagerie"].indexOf(st) !== -1;
+      if(key==="rdv") return st === "rdv-obtenu";
+      if(key==="requalifier") return hasLabel(it, "a-requalifier");
+      if(key==="enrichir") return hasLabel(it, "sans-numero");
+      return true;
+    });
+  }
+
+  function renderList(){
+    var list = itemsForFilter(currentFilter);
+    if(searchQuery){
+      var q = searchQuery.toLowerCase();
+      list = list.filter(function(it){ return it.title.toLowerCase().indexOf(q) !== -1 || (it.body||"").toLowerCase().indexOf(q) !== -1; });
+    }
+    list = list.slice().sort(function(a,b){
+      var pa = PRIO_ORDER[getPrio(a)] !== undefined ? PRIO_ORDER[getPrio(a)] : 3;
+      var pb = PRIO_ORDER[getPrio(b)] !== undefined ? PRIO_ORDER[getPrio(b)] : 3;
+      if(pa!==pb) return pa-pb;
+      return a.title.localeCompare(b.title);
+    });
+    var container = el("cardList");
+    if(list.length===0){ container.className="empty"; container.innerHTML = "Aucune fiche dans cette vue."; return; }
+    container.className = "";
+    container.innerHTML = list.map(function(it){
+      var st = getStatus(it);
+      var pr = getPrio(it);
+      var flags = "";
+      if(hasLabel(it,"a-requalifier")) flags += '<span class="flag warn">⚠ À requalifier</span>';
+      if(hasLabel(it,"sans-numero")) flags += '<span class="flag nonum">Aucun numéro</span>';
+      return '' +
+        '<div class="card" data-num="'+it.number+'">' +
+          '<div class="card-top">' +
+            '<div class="card-titles"><div class="co">'+esc(it.title)+'</div></div>' +
+            '<div class="badges"><span class="badge pr-'+esc(pr)+'">'+esc(pr)+'</span></div>' +
+          '</div>' +
+          (flags ? '<div class="flagrow">'+flags+'</div>' : '') +
+          '<div class="card-bottom"><span class="pill st-'+st+'">'+esc(STATUS_LABEL[st]||st)+'</span>' +
+            '<span class="meta">#'+it.number+'</span></div>' +
+        '</div>';
+    }).join("");
+    Array.prototype.forEach.call(container.querySelectorAll(".card"), function(c){
+      c.onclick = function(){ openFiche(parseInt(c.getAttribute("data-num"),10)); };
+    });
+  }
+
+  var openNumber = null;
+  var commentsCache = {}; // number -> array | "loading" | "error"
+  function openFiche(number){
+    openNumber = number;
+    renderFiche();
+    loadComments(number);
+  }
+  function loadComments(number){
+    commentsCache[number] = "loading";
+    fetch(WORKER_URL + "?type=comments&repo=" + REPONAME + "&number=" + number + "&_=" + Date.now(), { cache: "no-store" })
+      .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+      .then(function(data){
+        commentsCache[number] = data;
+        if(openNumber === number) renderFiche();
+      })
+      .catch(function(){
+        commentsCache[number] = "error";
+        if(openNumber === number) renderFiche();
+      });
+  }
+  function renderNotesSection(it){
+    var c = commentsCache[it.number];
+    var listHtml;
+    if(c === "loading" || c === undefined){
+      listHtml = '<div class="meta" style="padding:6px 0;">Chargement des notes…</div>';
+    } else if(c === "error"){
+      listHtml = '<div class="meta" style="padding:6px 0;">Impossible de charger les notes.</div>';
+    } else if(c.length === 0){
+      listHtml = '<div class="meta" style="padding:6px 0;">Aucune note pour l’instant.</div>';
+    } else {
+      listHtml = c.slice().reverse().map(function(cm){
+        var d = new Date(cm.created_at);
+        var dstr = d.toLocaleDateString("fr-FR") + " " + d.toLocaleTimeString("fr-FR", {hour:"2-digit", minute:"2-digit"});
+        return '<div style="border-top:1px solid var(--border); padding:9px 0; font-size:13px;">' +
+          '<div style="color:var(--ink-faint); font-size:11.5px; margin-bottom:3px;">'+esc(dstr)+'</div>' +
+          '<div>'+renderBody(cm.body)+'</div>' +
+        '</div>';
+      }).join("");
+    }
+    return '' +
+      '<div class="section-title" style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-faint);margin:16px 0 8px;">Notes</div>' +
+      '<textarea id="noteInput" placeholder="Ajouter une note (ce qui a été dit, une date de relance…)" style="width:100%;min-height:64px;border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);border-radius:10px;padding:9px 11px;font-size:13.5px;font-family:inherit;resize:vertical;"></textarea>' +
+      '<button class="btn primary" id="addNoteBtn" style="margin-top:8px;">Ajouter la note</button>' +
+      '<div id="notesList">' + listHtml + '</div>';
+  }
+  function renderFiche(){
+    var it = items.filter(function(x){ return x.number===openNumber; })[0];
+    if(!it){ el("modalRoot").innerHTML=""; return; }
+    var st = getStatus(it), pr = getPrio(it);
+    var statusButtons = STATUS_ORDER.map(function(key){
+      return '<button class="statusbtn'+(st===key?' current':'')+'" data-status="'+key+'">'+esc(STATUS_LABEL[key])+'</button>';
+    }).join("");
+    el("modalRoot").innerHTML =
+      '<div class="overlay" id="ovl"><div class="sheet">' +
+        '<div class="sheet-head"><h2>'+esc(it.title)+'</h2><button class="close" id="closeBtn">✕</button></div>' +
+        '<div class="badges" style="margin-bottom:12px;"><span class="badge pr-'+esc(pr)+'">'+esc(pr)+'</span> <span class="pill st-'+st+'">'+esc(STATUS_LABEL[st]||st)+'</span></div>' +
+        '<div class="sheet-body">' + renderBody(it.body) + '</div>' +
+        '<div class="section-title" style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-faint);margin:16px 0 8px;">Changer le statut</div>' +
+        '<div class="statusgrid">' + statusButtons + '</div>' +
+        renderNotesSection(it) +
+        '<a class="gh-cta" href="'+it.html_url+'" target="_blank" rel="noopener">Voir sur GitHub →</a>' +
+      '</div></div>';
+    el("closeBtn").onclick = function(){ openNumber=null; el("modalRoot").innerHTML=""; };
+    el("ovl").onclick = function(e){ if(e.target.id==="ovl"){ openNumber=null; el("modalRoot").innerHTML=""; } };
+    Array.prototype.forEach.call(document.querySelectorAll(".statusbtn"), function(b){
+      b.onclick = function(){ changeStatus(it, b.getAttribute("data-status")); };
+    });
+    el("addNoteBtn").onclick = function(){ addNote(it); };
+  }
+
+  function addNote(it){
+    if(!myName){ openIdentityModal(); return; }
+    var ta = el("noteInput");
+    var text = ta ? ta.value.trim() : "";
+    if(!text) return;
+    var btn = el("addNoteBtn");
+    btn.disabled = true; btn.textContent = "Enregistrement…";
+    fetch(WORKER_URL, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ action: "note", repo: REPONAME, issue_number: it.number, name: myName, note: text })
+    }).then(function(r){
+      if(!r.ok) return r.json().then(function(j){ throw new Error(j.error || ("HTTP "+r.status)); });
+      toast("Note enregistrée");
+      if(Array.isArray(commentsCache[it.number])){
+        commentsCache[it.number] = commentsCache[it.number].concat([{
+          body: (myName ? "**Note** — par " + myName + "\n\n" : "**Note**\n\n") + text,
+          created_at: new Date().toISOString()
+        }]);
+      }
+      if(openNumber === it.number) renderFiche();
+      loadComments(it.number);
+    }).catch(function(){
+      toast("Échec de l'enregistrement, réessaie.");
+      if(btn){ btn.disabled = false; btn.textContent = "Ajouter la note"; }
+    });
+  }
+
+  function changeStatus(it, newStatus){
+    if(!myName){ openIdentityModal(); return; }
+    var oldStatus = getStatus(it);
+    if(oldStatus === newStatus) return;
+    var keepLabels = labelNames(it).filter(function(n){ return !/^statut:\s*/.test(n); });
+    var newLabels = keepLabels.concat(["statut: " + newStatus]);
+    // optimistic update
+    it.labels = newLabels.map(function(n){ return {name:n}; });
+    renderFiche(); renderChips(); renderList();
+    fetch(WORKER_URL, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ action: "status", repo: REPONAME, issue_number: it.number, status: newStatus, name: myName, keep_labels: keepLabels })
+    }).then(function(r){
+      if(!r.ok) return r.json().then(function(j){ throw new Error(j.error || ("HTTP "+r.status)); });
+      toast("Statut enregistré — " + STATUS_LABEL[newStatus]);
+      loadComments(it.number);
+    }).catch(function(e){
+      // revert
+      it.labels = labelNames(it).filter(function(n){ return !/^statut:\s*/.test(n) || n === "statut: " + oldStatus; }).map(function(n){return {name:n};});
+      if(!hasLabel(it, "statut: " + oldStatus)) it.labels.push({name:"statut: " + oldStatus});
+      renderFiche(); renderChips(); renderList();
+      toast("Échec de l'enregistrement, réessaie.");
+    });
+  }
+
+  el("searchInput").oninput = function(e){ searchQuery = e.target.value; renderList(); };
+
+  function load(manual){
+    if(items.length === 0){
+      el("cardList").className = "loading";
+      el("cardList").innerHTML = "Chargement…";
+    }
+    fetch(WORKER_URL + "?type=issues&repo=" + REPONAME + "&_=" + Date.now(), { cache: "no-store" })
+      .then(function(r){
+        if(!r.ok) return r.json().then(function(j){ throw new Error(j.message || ("HTTP "+r.status)); });
+        return r.json();
+      })
+      .then(function(data){
+        items = data.filter(function(d){ return !d.pull_request; });
+        renderChips();
+        renderList();
+        if(openNumber != null) renderFiche();
+        if(manual) toast("Actualisé — " + items.length + " fiches");
+      })
+      .catch(function(e){
+        if(items.length === 0){
+          el("cardList").className = "empty";
+          el("cardList").innerHTML = "Impossible de charger les fiches depuis GitHub (" + esc(e.message) + ").";
+        }
+      });
+  }
+
+  renderWhoami();
+  load(false);
+  pollTimer = setInterval(function(){ load(false); }, 30000);
+})();
+</script>
+</body>
+</html>
